@@ -8,11 +8,10 @@ import nrpc.exc
 from nrpc import nrpc_pb2
 
 % for mod, alias in g.extra_imports():
-import ${mod} as ${alias}
+from . import ${mod} as ${alias}
 % endfor
 
 
-PKG_SUBJECT = '${g.get_pkg_subject(fd)}'
 PKG_SUBJECT_PARAMS = [${', '.join("'%s'" % p for p in g.get_pkg_params(fd))}]
 PKG_SUBJECT_PARAMS_COUNT = ${len(g.get_pkg_params(fd))}
 % for sd in fd.service:
@@ -43,8 +42,7 @@ class ${sd.name}Handler:
     }):
         return '.'.join([
             ${', '.join(
-                (['"%s"'%g.get_pkg_subject(fd)] if g.get_pkg_subject(fd) else [])
-                + ["pkg_%s" % p for p in g.get_pkg_params(fd)]
+                ["pkg_%s" % p for p in g.get_pkg_params(fd)]
                 + [ sd.name+'_SUBJECT' ]
                 + ["svc_%s" % p for p in g.get_svc_params(sd)]
                 + ["method"]
@@ -53,10 +51,9 @@ class ${sd.name}Handler:
 
     async def handler(self, msg):
         try:
-            pkg_params, svc_params, mt_subject, tail = nrpc.parse_subject(
-                PKG_SUBJECT, PKG_SUBJECT_PARAMS_COUNT,
-                ${sd.name}_SUBJECT, ${sd.name}_SUBJECT_PARAMS_COUNT,
-                msg.subject)
+            _, _, mt_subject, tail = nrpc.parse_subject(
+                "", 0, ${sd.name}_SUBJECT, ${sd.name}_SUBJECT_PARAMS_COUNT, msg.subject
+            )
 
             mname, params_count, input_type, has_reply, void_reply, streamed_reply = self.methods[mt_subject]
             mt_params, count = nrpc.parse_subject_tail(params_count, tail)
@@ -122,7 +119,7 @@ class ${sd.name}Client:
         req,
         % endif
     ):
-        subject = PKG_SUBJECT + '.' + \
+        subject = '' + \
         % for p in g.get_pkg_params(fd):
 self.pkg_${p} + '.' + \
         % endfor
