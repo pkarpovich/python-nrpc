@@ -141,7 +141,7 @@ self.svc_${p} + '.' + \
       % if md.output_type == '.nrpc.NoReply':
         await self.nc.publish(subject, rawReq)
       % elif g.mt_has_streamed_reply(md):
-        async for rawRep in nrpc.streamed_reply_request(self.nc, subject, rawReq, 5):
+        async for rawRep in nrpc.streamed_reply_request(self.nc, subject, rawReq, 300):
             % if md.output_type == '.nrpc.Void':
             if len(rawRep.data):
                 raise ValueError("Received a non-empty response")
@@ -150,7 +150,7 @@ self.svc_${p} + '.' + \
             yield ${g.get_type(md.output_type)}.FromString(rawRep.data)
             % endif
       % else:
-        rawRep = await self.nc.request(subject, rawReq, timeout=5)
+        rawRep = await self.nc.request(subject, rawReq, timeout=300)
         if rawRep.data and rawRep.data[0] == 0:
             raise nrpc.exc.from_error(
                 nrpc_pb2.Error.FromString(rawRep.data[1:]))
